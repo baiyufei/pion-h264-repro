@@ -132,7 +132,9 @@ func main() {
 						panic(readerError)
 					}
 
-					time.Sleep(sleepTime)
+					if nal.UnitType != h264reader.NalUnitTypeSPS && nal.UnitType != h264reader.NalUnitTypePPS {
+						time.Sleep(sleepTime)
+					}
 					if writeErr := videoTrack.WriteSample(media.Sample{Data: nal.Data, Duration: time.Second}); writeErr != nil {
 						panic(writeErr)
 					}
@@ -145,12 +147,18 @@ func main() {
 				fmt.Printf("Connection State has changed %s \n", connectionState.String())
 
 				if connectionState == webrtc.ICEConnectionStateConnected {
-					iceConnectedCtxCancel()
+					// iceConnectedCtxCancel()
 					fmt.Println("Ctrl+C the remote client to stop the demo")
 				} else if connectionState == webrtc.ICEConnectionStateFailed ||
 					connectionState == webrtc.ICEConnectionStateDisconnected {
 					fmt.Println("Done")
 					os.Exit(0)
+				}
+			})
+
+			peerConnection.OnConnectionStateChange(func(connectionState webrtc.PeerConnectionState) {
+				if connectionState == webrtc.PeerConnectionStateConnected {
+					iceConnectedCtxCancel() // should wait dtls connected
 				}
 			})
 
